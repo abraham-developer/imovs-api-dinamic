@@ -383,29 +383,32 @@ function ScheduleConfig({ node }: { node: WorkflowNode }) {
 
   // Determine current mode from cron expression
   const cron = params.cronExpression || '';
+  const cronParts = cron.split(' ');
+  const hasValidCron = cronParts.length === 5;
   const scheduleMode = params.scheduleMode || detectScheduleMode(cron);
 
   // Days of week for weekly mode
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const selectedDays: string[] = cron.includes(',')
-    ? cron.split(' ').slice(-1)[0].split(',')
-    : cron.split(' ').length === 5 && !['*', '?'].includes(cron.split(' ')[4])
-      ? [cron.split(' ')[4]]
+  const selectedDays: string[] = hasValidCron && cron.includes(',')
+    ? cronParts[4].split(',')
+    : hasValidCron && !['*', '?'].includes(cronParts[4])
+      ? [cronParts[4]]
       : [];
 
   // Minute of hour for hourly mode
-  const minuteOfHour = cron.includes('*/') || cron === '* * * * *'
+  const minuteOfHour = !hasValidCron ? 0
+    : cron.includes('*/') || cron === '* * * * *'
     ? 0
-    : parseInt(cron.split(' ')[0]) || 0;
+    : parseInt(cronParts[0]) || 0;
 
   // Day of month for monthly mode
-  const dayOfMonth = !cron.split(' ')[2].includes('*')
-    ? parseInt(cron.split(' ')[2])
+  const dayOfMonth = hasValidCron && !cronParts[2].includes('*')
+    ? parseInt(cronParts[2]) || 1
     : 1;
 
   // Hour for daily mode
-  const hourOfDay = !cron.split(' ')[1].includes('*')
-    ? parseInt(cron.split(' ')[1])
+  const hourOfDay = hasValidCron && !cronParts[1].includes('*')
+    ? parseInt(cronParts[1]) || 0
     : 0;
 
   const updateCron = useCallback((mode: string, extras?: Record<string, any>) => {

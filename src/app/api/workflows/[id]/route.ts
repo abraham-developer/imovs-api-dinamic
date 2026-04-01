@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import type { WorkflowResponse, WorkflowNode, WorkflowEdge } from '@/lib/cubeark-engine/types';
+import { rescheduleWorkflow, unscheduleWorkflow } from '@/lib/scheduler';
 
 // --- Validation Schemas ---
 
@@ -156,6 +157,15 @@ export async function PUT(
       data: updateData,
     });
 
+    // Re-schedule or unschedule based on active state and cron config
+    if (active === false) {
+      unscheduleWorkflow(id);
+    } else if (active === true || nodes !== undefined) {
+      rescheduleWorkflow(id).catch((err) => {
+        console.error(`[Scheduler] Failed to reschedule workflow ${id}:`, err);
+      });
+    }
+
     return NextResponse.json(formatWorkflow(updated));
   } catch (error) {
     console.error(`[PUT /api/workflows/:id] Error:`, error);
@@ -189,6 +199,9 @@ export async function DELETE(
     await db.workflow.delete({
       where: { id },
     });
+
+    // Stop any scheduled job for this workflow
+    unscheduleWorkflow(id);
 
     return NextResponse.json({ success: true });
   } catch (error) {
