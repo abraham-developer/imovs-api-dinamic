@@ -5,7 +5,7 @@ import { executeWorkflow } from '@/lib/engine/executor';
 // --- Route Handlers ---
 
 /**
- * Universal handler for all HTTP methods on /api/webhook/[path]
+ * Universal handler for all HTTP methods on /api/[path]
  * Catches GET, POST, PUT, DELETE, PATCH, etc.
  *
  * Response Modes (like n8n):
@@ -27,7 +27,7 @@ async function handleWebhook(
 
     if (!webhook) {
       return NextResponse.json(
-        { error: 'Webhook not found', message: `No active webhook found at path: /api/webhook/${path}` },
+        { error: 'Webhook not found', message: `No active webhook found at path: /api/${path}` },
         { status: 404 }
       );
     }

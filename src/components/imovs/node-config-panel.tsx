@@ -159,7 +159,7 @@ function WebhookConfig({ node }: { node: WorkflowNode }) {
   const respondMode = params.respondMode || 'lastNode';
   const [copied, setCopied] = useState(false);
   const webhookPath = params.path || '';
-  const webhookUrl = webhookPath ? `/api/webhook/${webhookPath}` : '';
+  const webhookUrl = webhookPath ? `/api/${webhookPath}` : '';
 
   const copyUrl = useCallback(() => {
     if (!webhookUrl) return;
@@ -225,7 +225,7 @@ function WebhookConfig({ node }: { node: WorkflowNode }) {
           <Label className="text-xs">Webhook Path</Label>
           <div className="flex items-center gap-1.5">
             <code className="flex-shrink-0 text-[10px] font-mono text-muted-foreground bg-muted px-2 py-1.5 rounded-md">
-              /api/webhook/
+              /api/
             </code>
             <Input
               value={params.path || ''}
