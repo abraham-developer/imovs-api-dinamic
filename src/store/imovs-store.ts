@@ -90,24 +90,43 @@ export const useImovsStore = create<ImovsStore>((set, get) => ({
   setWorkflows: (workflows) => set({ workflows }),
   selectWorkflow: (id) => {
     const workflow = get().workflows.find(w => w.id === id);
+    if (!workflow) return;
+
+    // Fix duplicate node IDs from legacy data
+    const seenIds = new Map<string, number>();
+    const fixedNodes = workflow.nodes.map((node) => {
+      const count = seenIds.get(node.id) ?? 0;
+      seenIds.set(node.id, count + 1);
+      if (count > 0) {
+        // Duplicate found — assign a new unique ID and update edges
+        return { ...node, id: `node-${Date.now()}-${Math.random().toString(36).substring(2, 9)}` };
+      }
+      return node;
+    });
+
+    // Rebuild edge references for renamed nodes
+    const oldToNew = new Map<string, string>();
+    workflow.nodes.forEach((original, i) => {
+      if (original.id !== fixedNodes[i].id) {
+        oldToNew.set(original.id, fixedNodes[i].id);
+      }
+    });
+    const fixedEdges = workflow.edges.map((edge) => ({
+      ...edge,
+      source: oldToNew.get(edge.source) ?? edge.source,
+      target: oldToNew.get(edge.target) ?? edge.target,
+    }));
+
     set({
       selectedWorkflowId: id,
-      workflowActive: workflow?.active ?? false,
-      editorNodes: workflow ? [...workflow.nodes] : [],
-      editorEdges: workflow ? [...workflow.edges] : [],
+      workflowActive: workflow.active ?? false,
+      editorNodes: fixedNodes,
+      editorEdges: fixedEdges,
       selectedNodeId: null,
-      workflowName: workflow?.name || '',
+      workflowName: workflow.name || '',
       executions: [],
       lastExecutionResult: null,
     });
-    // Reset counter to avoid ID collisions with existing nodes
-    if (workflow?.nodes?.length) {
-      const maxNum = workflow.nodes.reduce((max, n) => {
-        const m = n.id.match(/node-(\d+)/);
-        return m ? Math.max(max, parseInt(m[1], 10)) : max;
-      }, 0);
-      nodeIdCounter = maxNum + 1;
-    }
   },
 
   // Editor actions
