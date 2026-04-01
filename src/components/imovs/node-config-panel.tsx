@@ -72,7 +72,7 @@ export function NodeConfigPanel() {
       </div>
 
       {/* Scrollable content */}
-      <ScrollArea className="flex-1 custom-scrollbar">
+      <ScrollArea className="flex-1 min-h-0 custom-scrollbar">
         <div className="p-4 space-y-4">
           {/* Node label */}
           <div className="space-y-1.5">
