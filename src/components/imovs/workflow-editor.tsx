@@ -309,9 +309,17 @@ function FlowCanvas() {
   );
 
   const onPaneClick = useCallback(() => {
+    // Skip if a node was just clicked (prevents race condition)
+    if (isNodeClickRef.current) {
+      isNodeClickRef.current = false;
+      return;
+    }
     setSelectedNodeId(null);
     setConfigOpen(false);
   }, [setSelectedNodeId]);
+
+  // Track whether the last interaction was a node click to prevent pane click race condition
+  const isNodeClickRef = useRef(false);
 
   const handleSave = useCallback(async () => {
     if (!selectedWorkflowId) return;
@@ -602,7 +610,9 @@ function FlowCanvas() {
             onDrop={onDrop}
             onDragOver={onDragOver}
             onPaneClick={onPaneClick}
-            onNodeClick={(_event, node) => {
+            onNodeClick={(event, node) => {
+              event.stopPropagation();
+              isNodeClickRef.current = true;
               setSelectedNodeId(node.id);
               setConfigOpen(true);
             }}
@@ -645,14 +655,12 @@ function FlowCanvas() {
         </div>
 
         {/* Config Panel - Mobile/Tablet: Sheet overlay */}
-        {configOpen && (
-          <Sheet open={configOpen} onOpenChange={setConfigOpen}>
-            <SheetContent side="right" className="w-80 sm:w-96 p-0">
-              <SheetTitle className="sr-only">Node Configuration</SheetTitle>
-              <NodeConfigPanel onClose={() => setConfigOpen(false)} />
-            </SheetContent>
-          </Sheet>
-        )}
+        <Sheet open={configOpen} onOpenChange={setConfigOpen}>
+          <SheetContent side="right" className="w-80 sm:w-96 p-0 lg:hidden">
+            <SheetTitle className="sr-only">Node Configuration</SheetTitle>
+            <NodeConfigPanel onClose={() => setConfigOpen(false)} />
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   );
