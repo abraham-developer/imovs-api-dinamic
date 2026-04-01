@@ -186,7 +186,7 @@ function NodePalette({ onClose }: { onClose?: () => void }) {
         </div>
       </div>
 
-      <ScrollArea className="flex-1 custom-scrollbar">
+      <ScrollArea className="flex-1 min-h-0 custom-scrollbar">
         <div className="p-2 space-y-1">
           {filteredByCategory.map((cat) => (
             <div key={cat.key} className="mb-3">
@@ -583,7 +583,7 @@ function FlowCanvas() {
       <div className="flex-1 flex overflow-hidden relative">
         {/* Left Panel - Node Palette (desktop only) */}
         <div className={cn(
-          'w-64 flex-shrink-0 border-r bg-white transition-all duration-200',
+          'w-64 flex-shrink-0 border-r bg-white transition-all duration-200 overflow-hidden',
           'hidden lg:flex flex-col',
           !paletteOpen && 'lg:hidden'
         )}>
