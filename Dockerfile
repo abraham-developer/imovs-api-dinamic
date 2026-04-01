@@ -27,9 +27,15 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy source code
 COPY . .
 
+# Create .env from example if not exists
+RUN test -f .env || cp .env.example .env
+
 # Set DATABASE_URL for build-time Prisma operations
 ENV DATABASE_URL="file:/app/data/custom.db"
 ENV NODE_ENV="production"
+
+# Create data directory
+RUN mkdir -p /app/data
 
 # Generate Prisma client
 RUN npx prisma generate

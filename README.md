@@ -36,11 +36,14 @@ cd imovs-api-dinamic
 # 2. Install dependencies
 npm install
 
-# 3. Setup database
+# 3. Create environment file
+cp .env.example .env
+
+# 4. Setup database (creates ./data/custom.db automatically)
 npx prisma generate
 npx prisma db push
 
-# 4. Start development server
+# 5. Start development server
 npm run dev
 ```
 
@@ -101,7 +104,7 @@ imovs-api-dinamic/
 │   │   ├── layout.tsx       # Root layout
 │   │   └── page.tsx         # Entry page with auth gate
 │   ├── components/
-│   │   ├── flowforge/       # Workflow UI components
+│   │   ├── imovs/           # Workflow UI components
 │   │   │   ├── workflow-editor.tsx    # Visual editor with React Flow
 │   │   │   ├── workflow-dashboard.tsx # Workflow list
 │   │   │   ├── custom-nodes.tsx       # Custom node components
