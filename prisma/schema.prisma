@@ -1,0 +1,96 @@
+// iMOVS API Dinamic - Workflow Automation Platform
+// Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// WORKFLOWS
+// ============================================
+
+model Workflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  active      Boolean  @default(false)
+  // The workflow graph stored as JSON: nodes, edges, positions
+  nodes       String   // JSON array of workflow nodes
+  edges       String   // JSON array of connections
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  executions  WorkflowExecution[]
+  webhooks    Webhook[]
+}
+
+// ============================================
+// WORKFLOW EXECUTIONS
+// ============================================
+
+model WorkflowExecution {
+  id         String   @id @default(cuid())
+  workflowId String
+  status     String   @default("pending") // pending, running, success, error, cancelled
+  // Input data that triggered the execution
+  inputData  String?  // JSON
+  // Final output data
+  outputData String?  // JSON
+  // Detailed execution log per node
+  nodeLogs   String?  // JSON array of { nodeId, status, output, error, duration }
+  // Error message if failed
+  error      String?
+  // Execution duration in ms
+  duration   Int?
+  startedAt  DateTime @default(now())
+  finishedAt DateTime?
+
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// WEBHOOKS (for webhook trigger nodes)
+// ============================================
+
+model Webhook {
+  id         String   @id @default(cuid())
+  workflowId String
+  path       String   @unique // The unique webhook path
+  method     String   @default("POST")
+  nodeId     String   // The node ID in the workflow that uses this webhook
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+// ============================================
+// CREDENTIALS (API keys, tokens, etc.)
+// ============================================
+
+model Credential {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // e.g., "http_basic", "bearer_token", "api_key"
+  data      String   // JSON with credential details (encrypted in production)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// USERS
+// ============================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

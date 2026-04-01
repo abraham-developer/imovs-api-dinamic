@@ -1,0 +1,38 @@
+# Dependencies
+node_modules
+
+# Next.js build output
+.next
+
+# Git
+.git
+.gitignore
+
+# Database files
+data/*.db
+
+# Logs
+dev.log
+server.log
+*.log
+
+# Documentation
+*.md
+
+# IDE
+.vscode
+.idea
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Misc
+.env
+.env.local
+.env.*.local
