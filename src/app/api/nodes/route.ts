@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { NODE_TYPE_DEFINITIONS } from '@/lib/engine/types';
+import { NODE_TYPE_DEFINITIONS } from '@/lib/cubeark-engine/types';
 
 // --- Route Handlers ---
 

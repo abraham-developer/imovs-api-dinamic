@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { executeWorkflow } from '@/lib/engine/executor';
+import { executeWorkflow } from '@/lib/cubeark-engine/executor';
 
 // --- Route Handlers ---
 
@@ -146,7 +146,7 @@ async function handleWebhook(
         const output = responseLog.output as Record<string, unknown>;
 
         // Check if output has the webhook response envelope
-        if (output.__imovs_webhook_response) {
+        if (output.__cubeark_webhook_response) {
           const statusCode = (output.statusCode as number) || 200;
           const headers = (output.headers as Record<string, string>) || {};
           const body = output.body;

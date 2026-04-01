@@ -16,8 +16,8 @@ interface AuthStore {
   checkAuth: () => void;
 }
 
-const USERS_KEY = 'imovs_users';
-const CURRENT_USER_KEY = 'imovs_current_user';
+const USERS_KEY = 'cubeark_users';
+const CURRENT_USER_KEY = 'cubeark_current_user';
 
 interface StoredUser {
   email: string;
@@ -28,7 +28,7 @@ interface StoredUser {
 function isLocalStorageAvailable(): boolean {
   try {
     if (typeof window === 'undefined') return false;
-    const testKey = '__imovs_test__';
+    const testKey = '__cubeark_test__';
     window.localStorage.setItem(testKey, '1');
     window.localStorage.removeItem(testKey);
     return true;

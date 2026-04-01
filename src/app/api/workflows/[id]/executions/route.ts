@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import type { WorkflowExecutionData } from '@/lib/engine/types';
+import type { WorkflowExecutionData } from '@/lib/cubeark-engine/types';
 
 // --- Route Handlers ---
 

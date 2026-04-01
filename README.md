@@ -1,6 +1,8 @@
-# iMOVS API Dinamic
+# Cubeark API Dynamic
 
 A powerful workflow automation platform (n8n-inspired) built with modern web technologies. Create, edit, and execute visual workflows with HTTP requests, JavaScript code, webhooks, and more.
+
+**🔗 [cubeark.dev](https://cubeark.dev)**
 
 ## ✨ Features
 
@@ -82,10 +84,10 @@ The app will be available at **http://localhost:3000**
 
 ```bash
 # Build
-docker build -t imovs-api .
+docker build -t cubeark-api .
 
 # Run
-docker run -d -p 3000:3000 -v ./data:/app/data --name imovs imovs-api
+docker run -d -p 3000:3000 -v ./data:/app/data --name cubeark cubeark-api
 ```
 
 ### Docker Data Persistence
@@ -94,7 +96,7 @@ SQLite database files are stored in `./data/` directory. This volume ensures you
 ## 📁 Project Structure
 
 ```
-imovs-api-dinamic/
+cubeark-api-dynamic/
 ├── prisma/
 │   └── schema.prisma       # Database schema (SQLite)
 ├── public/                  # Static assets
@@ -104,7 +106,7 @@ imovs-api-dinamic/
 │   │   ├── layout.tsx       # Root layout
 │   │   └── page.tsx         # Entry page with auth gate
 │   ├── components/
-│   │   ├── imovs/           # Workflow UI components
+│   │   ├── cubeark/         # Workflow UI components
 │   │   │   ├── workflow-editor.tsx    # Visual editor with React Flow
 │   │   │   ├── workflow-dashboard.tsx # Workflow list
 │   │   │   ├── custom-nodes.tsx       # Custom node components
@@ -114,14 +116,14 @@ imovs-api-dinamic/
 │   │   │   └── user-menu.tsx          # User avatar dropdown
 │   │   └── ui/              # shadcn/ui components
 │   ├── lib/
-│   │   ├── engine/
+│   │   ├── cubeark-engine/  # Workflow execution engine
 │   │   │   ├── types.ts     # Node type definitions
 │   │   │   ├── executor.ts  # Workflow execution engine (BFS)
 │   │   │   └── nodes/       # Node executors (http, code, webhook, etc.)
 │   │   ├── api.ts           # API service layer
 │   │   └── utils.ts         # Utility functions
 │   └── store/
-│       ├── imovs-store.ts   # Main application store (Zustand)
+│       ├── cubeark-store.ts # Main application store (Zustand)
 │       └── auth-store.ts    # Authentication store
 ├── Dockerfile
 ├── docker-compose.yml
@@ -141,7 +143,7 @@ imovs-api-dinamic/
 | DELETE | `/api/workflows/:id` | Delete a workflow |
 | POST | `/api/workflows/:id/execute` | Execute a workflow |
 | GET | `/api/executions` | List execution history |
-| GET/POST/PUT/DELETE | `/api/webhook/:path` | Webhook endpoint |
+| GET/POST/PUT/DELETE | `/api/:path` | Webhook endpoint |
 
 ## 🚀 Available Nodes
 

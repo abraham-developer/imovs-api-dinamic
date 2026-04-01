@@ -3,7 +3,7 @@ import type {
   CreateWorkflowRequest,
   ExecuteWorkflowResponse,
   WorkflowExecutionData,
-} from '@/lib/engine/types';
+} from '@/lib/cubeark-engine/types';
 
 const API_BASE = '';
 

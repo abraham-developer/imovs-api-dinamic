@@ -1,9 +1,9 @@
 services:
-  imovs-api:
+  cubeark-api:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: imovs-api
+    container_name: cubeark-api
     restart: unless-stopped
     ports:
       - "3000:3000"

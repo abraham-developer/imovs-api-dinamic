@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
-import { executeWorkflow } from '@/lib/engine/executor';
-import type { ExecuteWorkflowResponse } from '@/lib/engine/types';
+import { executeWorkflow } from '@/lib/cubeark-engine/executor';
+import type { ExecuteWorkflowResponse } from '@/lib/cubeark-engine/types';
 
 // --- Validation Schemas ---
 

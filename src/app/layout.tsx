@@ -14,22 +14,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "iMOVS API Dinamic - Workflow Automation Platform",
-  description: "Modern workflow automation platform. Build powerful integrations with a visual node-based editor. Powered by iMOVS API Dinamic.",
-  keywords: ["iMOVS", "API", "Workflow", "Automation", "Next.js", "TypeScript", "Tailwind CSS", "shadcn/ui"],
-  authors: [{ name: "iMOVS Team" }],
+  title: "Cubeark API Dynamic — Workflow Automation Platform",
+  description: "Build powerful workflow automations with a visual node-based editor. HTTP requests, code execution, webhooks and more. cubeark.dev",
+  keywords: ["Cubeark", "API", "Workflow", "Automation", "Next.js", "TypeScript", "Tailwind CSS", "shadcn/ui"],
+  authors: [{ name: "Cubeark Team" }],
   icons: {
     icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
   },
   openGraph: {
-    title: "iMOVS API Dinamic",
+    title: "Cubeark API Dynamic",
     description: "Workflow automation with a visual node-based editor",
-    siteName: "iMOVS API Dinamic",
+    siteName: "Cubeark API Dynamic",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "iMOVS API Dinamic",
+    title: "Cubeark API Dynamic",
     description: "Workflow automation with a visual node-based editor",
   },
 };

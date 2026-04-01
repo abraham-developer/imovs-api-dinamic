@@ -1,16 +1,16 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { useImovsStore } from '@/store/imovs-store';
+import { useCubearkStore } from '@/store/cubeark-store';
 import { useAuthStore } from '@/store/auth-store';
-import { WorkflowDashboard } from '@/components/imovs/workflow-dashboard';
-import { WorkflowEditor } from '@/components/imovs/workflow-editor';
-import { ExecutionViewer } from '@/components/imovs/execution-viewer';
-import { LoginPage } from '@/components/imovs/login-page';
+import { WorkflowDashboard } from '@/components/cubeark/workflow-dashboard';
+import { WorkflowEditor } from '@/components/cubeark/workflow-editor';
+import { ExecutionViewer } from '@/components/cubeark/execution-viewer';
+import { LoginPage } from '@/components/cubeark/login-page';
 import { Loader2 } from 'lucide-react';
 
 export default function HomePage() {
-  const { currentView } = useImovsStore();
+  const { currentView } = useCubearkStore();
   const { isAuthenticated, checkAuth } = useAuthStore();
   const [transitioning, setTransitioning] = useState(false);
   const prevAuthRef = useRef(isAuthenticated);
