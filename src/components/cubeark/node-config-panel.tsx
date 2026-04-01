@@ -381,42 +381,384 @@ function ScheduleConfig({ node }: { node: WorkflowNode }) {
   const { updateNodeData } = useCubearkStore();
   const params = node.data.parameters as any;
 
+  // Determine current mode from cron expression
+  const cron = params.cronExpression || '';
+  const scheduleMode = params.scheduleMode || detectScheduleMode(cron);
+
+  // Days of week for weekly mode
+  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const selectedDays: string[] = cron.includes(',')
+    ? cron.split(' ').slice(-1)[0].split(',')
+    : cron.split(' ').length === 5 && !['*', '?'].includes(cron.split(' ')[4])
+      ? [cron.split(' ')[4]]
+      : [];
+
+  // Minute of hour for hourly mode
+  const minuteOfHour = cron.includes('*/') || cron === '* * * * *'
+    ? 0
+    : parseInt(cron.split(' ')[0]) || 0;
+
+  // Day of month for monthly mode
+  const dayOfMonth = !cron.split(' ')[2].includes('*')
+    ? parseInt(cron.split(' ')[2])
+    : 1;
+
+  // Hour for daily mode
+  const hourOfDay = !cron.split(' ')[1].includes('*')
+    ? parseInt(cron.split(' ')[1])
+    : 0;
+
+  const updateCron = useCallback((mode: string, extras?: Record<string, any>) => {
+    let newCron = '';
+    let newMode = mode;
+
+    switch (mode) {
+      case 'everyMinute':
+        newCron = '* * * * *';
+        break;
+      case 'every5Minutes':
+        newCron = '*/5 * * * *';
+        break;
+      case 'every10Minutes':
+        newCron = '*/10 * * * *';
+        break;
+      case 'every15Minutes':
+        newCron = '*/15 * * * *';
+        break;
+      case 'every30Minutes':
+        newCron = '*/30 * * * *';
+        break;
+      case 'everyHour':
+        newCron = `0 * * * *`;
+        break;
+      case 'customHour': {
+        const min = extras?.minuteOfHour ?? 0;
+        newCron = `${min} * * * *`;
+        break;
+      }
+      case 'everyDay': {
+        const h = extras?.hourOfDay ?? 0;
+        const m = extras?.minuteOfHour ?? 0;
+        newCron = `${m} ${h} * * *`;
+        break;
+      }
+      case 'everyWeek': {
+        const days = extras?.selectedDays || [];
+        const h = extras?.hourOfDay ?? 0;
+        const m = extras?.minuteOfHour ?? 0;
+        if (days.length === 0 || days.length === 7) {
+          newCron = `${m} ${h} * * *`;
+          newMode = 'everyDay';
+        } else {
+          newCron = `${m} ${h} * * ${days.sort().join(',')}`;
+        }
+        break;
+      }
+      case 'everyMonth': {
+        const dom = extras?.dayOfMonth ?? 1;
+        const h = extras?.hourOfDay ?? 0;
+        const m = extras?.minuteOfHour ?? 0;
+        newCron = `${m} ${h} ${dom} * *`;
+        break;
+      }
+      case 'custom':
+        newCron = extras?.customCron || '';
+        break;
+    }
+
+    updateNodeData(node.id, {
+      parameters: { ...params, cronExpression: newCron, scheduleMode: newMode },
+    });
+  }, [node.id, params, updateNodeData]);
+
+  const toggleDay = (dayIdx: number) => {
+    const dayNames = ['0', '1', '2', '3', '4', '5', '6'];
+    const dayStr = dayNames[dayIdx];
+    const newDays = selectedDays.includes(dayStr)
+      ? selectedDays.filter((d) => d !== dayStr)
+      : [...selectedDays, dayStr];
+    updateCron('everyWeek', {
+      selectedDays: newDays,
+      hourOfDay,
+      minuteOfHour: minuteOfHour,
+    });
+  };
+
+  const timezones = [
+    'UTC',
+    'America/Mexico_City',
+    'America/New_York',
+    'America/Chicago',
+    'America/Denver',
+    'America/Los_Angeles',
+    'America/Bogota',
+    'America/Lima',
+    'America/Santiago',
+    'America/Buenos_Aires',
+    'America/Sao_Paulo',
+    'Europe/London',
+    'Europe/Madrid',
+    'Europe/Paris',
+    'Europe/Berlin',
+    'Asia/Tokyo',
+    'Asia/Shanghai',
+    'Asia/Kolkata',
+    'Asia/Dubai',
+    'Australia/Sydney',
+  ];
+
   return (
     <div className="space-y-3">
-      <ConfigSection title="Schedule Settings">
+      <ConfigSection title="Trigger Interval">
         <div className="space-y-1.5">
-          <Label className="text-xs">Cron Expression</Label>
-          <Input
-            value={params.cronExpression || ''}
-            onChange={(e) =>
-              updateNodeData(node.id, {
-                parameters: { ...params, cronExpression: e.target.value },
-              })
-            }
-            className="h-8 text-sm font-mono"
-            placeholder="0 * * * *"
-          />
-          <p className="text-[10px] text-muted-foreground">
-            Use standard cron syntax. &quot;0 * * * *&quot; = every hour
-          </p>
+          <Label className="text-xs">Repeat Every</Label>
+          <Select
+            value={scheduleMode}
+            onValueChange={(val) => updateCron(val)}
+          >
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="everyMinute">Every minute</SelectItem>
+              <SelectItem value="every5Minutes">Every 5 minutes</SelectItem>
+              <SelectItem value="every10Minutes">Every 10 minutes</SelectItem>
+              <SelectItem value="every15Minutes">Every 15 minutes</SelectItem>
+              <SelectItem value="every30Minutes">Every 30 minutes</SelectItem>
+              <SelectItem value="everyHour">Every hour</SelectItem>
+              <SelectItem value="everyDay">Every day</SelectItem>
+              <SelectItem value="everyWeek">Every week</SelectItem>
+              <SelectItem value="everyMonth">Every month</SelectItem>
+              <SelectItem value="custom">Custom cron expression</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+      </ConfigSection>
 
-        <div className="space-y-1.5">
-          <Label className="text-xs">Timezone</Label>
-          <Input
-            value={params.timezone || 'UTC'}
-            onChange={(e) =>
-              updateNodeData(node.id, {
-                parameters: { ...params, timezone: e.target.value },
-              })
-            }
-            className="h-8 text-sm"
-            placeholder="UTC"
-          />
+      {/* Hourly: minute selector */}
+      {scheduleMode === 'everyHour' && (
+        <ConfigSection title="At Minute">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Minute of the hour</Label>
+            <Select
+              value={String(minuteOfHour)}
+              onValueChange={(val) => updateCron('customHour', { minuteOfHour: parseInt(val) })}
+            >
+              <SelectTrigger className="h-8 text-sm w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 60 }, (_, i) => (
+                  <SelectItem key={i} value={String(i)}>
+                    {String(i).padStart(2, '0')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </ConfigSection>
+      )}
+
+      {/* Daily: hour + minute */}
+      {(scheduleMode === 'everyDay' || scheduleMode === 'everyWeek' || scheduleMode === 'everyMonth') && (
+        <ConfigSection title="At Time">
+          <div className="flex items-center gap-2">
+            <div className="space-y-1 flex-1">
+              <Label className="text-xs">Hour</Label>
+              <Select
+                value={String(hourOfDay)}
+                onValueChange={(val) =>
+                  updateCron(scheduleMode, { hourOfDay: parseInt(val), minuteOfHour, selectedDays, dayOfMonth })
+                }
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 24 }, (_, i) => (
+                    <SelectItem key={i} value={String(i)}>
+                      {String(i).padStart(2, '0')}:00
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1 w-24">
+              <Label className="text-xs">Minute</Label>
+              <Select
+                value={String(minuteOfHour)}
+                onValueChange={(val) =>
+                  updateCron(scheduleMode, { minuteOfHour: parseInt(val), hourOfDay, selectedDays, dayOfMonth })
+                }
+              >
+                <SelectTrigger className="h-8 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 60 }, (_, i) => (
+                    <SelectItem key={i} value={String(i)}>
+                      :{String(i).padStart(2, '0')}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </ConfigSection>
+      )}
+
+      {/* Weekly: day selection */}
+      {scheduleMode === 'everyWeek' && (
+        <ConfigSection title="On Days">
+          <div className="flex gap-1 flex-wrap">
+            {daysOfWeek.map((day, idx) => {
+              const dayNames = ['0', '1', '2', '3', '4', '5', '6'];
+              const isSelected = selectedDays.includes(dayNames[idx]);
+              return (
+                <button
+                  key={day}
+                  onClick={() => toggleDay(idx)}
+                  className={cn(
+                    'w-9 h-9 rounded-lg text-xs font-medium transition-all border',
+                    isSelected
+                      ? 'bg-purple-500 text-white border-purple-500 shadow-sm'
+                      : 'bg-white text-muted-foreground border-zinc-200 hover:border-purple-300 hover:text-foreground'
+                  )}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-1">
+            {selectedDays.length === 0
+              ? 'No days selected — defaults to every day'
+              : `Selected: ${selectedDays.sort().map(d => daysOfWeek[parseInt(d)]).join(', ')}`}
+          </p>
+        </ConfigSection>
+      )}
+
+      {/* Monthly: day of month */}
+      {scheduleMode === 'everyMonth' && (
+        <ConfigSection title="On Day of Month">
+          <div className="space-y-1.5">
+            <Select
+              value={String(dayOfMonth)}
+              onValueChange={(val) =>
+                updateCron('everyMonth', { dayOfMonth: parseInt(val), hourOfDay, minuteOfHour })
+              }
+            >
+              <SelectTrigger className="h-8 text-sm w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-48">
+                {Array.from({ length: 31 }, (_, i) => (
+                  <SelectItem key={i + 1} value={String(i + 1)}>
+                    Day {i + 1}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </ConfigSection>
+      )}
+
+      {/* Custom cron expression */}
+      {scheduleMode === 'custom' && (
+        <ConfigSection title="Custom Cron Expression">
+          <div className="space-y-1.5">
+            <Label className="text-xs">Cron</Label>
+            <Input
+              value={cron}
+              onChange={(e) =>
+                updateCron('custom', { customCron: e.target.value })
+              }
+              className="h-8 text-sm font-mono"
+              placeholder="0 * * * *"
+            />
+            <p className="text-[10px] text-muted-foreground">
+              Format: minute hour day month weekday
+            </p>
+          </div>
+        </ConfigSection>
+      )}
+
+      {/* Cron preview */}
+      <div className="p-3 bg-muted/50 rounded-md border space-y-1.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            Cron Expression
+          </span>
+          <code className="text-xs font-mono bg-white px-2 py-0.5 rounded border">{cron || 'Not set'}</code>
         </div>
+        {cron && (
+          <p className="text-[10px] text-muted-foreground">
+            {describeCron(cron)}
+          </p>
+        )}
+      </div>
+
+      {/* Timezone */}
+      <ConfigSection title="Timezone">
+        <Select
+          value={params.timezone || 'America/Mexico_City'}
+          onValueChange={(val) =>
+            updateNodeData(node.id, { parameters: { ...params, timezone: val } })
+          }
+        >
+          <SelectTrigger className="h-8 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {timezones.map((tz) => (
+              <SelectItem key={tz} value={tz}>
+                {tz.replace(/_/g, ' ')}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </ConfigSection>
     </div>
   );
+}
+
+function detectScheduleMode(cron: string): string {
+  if (!cron) return 'everyHour';
+  if (cron === '* * * * *') return 'everyMinute';
+  if (cron === '*/5 * * * *') return 'every5Minutes';
+  if (cron === '*/10 * * * *') return 'every10Minutes';
+  if (cron === '*/15 * * * *') return 'every15Minutes';
+  if (cron === '*/30 * * * *') return 'every30Minutes';
+  const parts = cron.split(' ');
+  if (parts.length !== 5) return 'custom';
+  const [min, hour, dom, mon, dow] = parts;
+  // Monthly: day of month is specific
+  if (!dom.includes('*') && !dom.includes('/') && hour !== '*' && min !== '*') return 'everyMonth';
+  // Weekly: day of week is specific
+  if (!dow.includes('*') && !dow.includes('?') && dow !== '') return 'everyWeek';
+  // Daily: hour is specific
+  if (!hour.includes('*') && !hour.includes('/')) return 'everyDay';
+  // Hourly: minute is 0
+  if (min === '0' && hour === '*') return 'everyHour';
+  return 'custom';
+}
+
+function describeCron(cron: string): string {
+  const parts = cron.split(' ');
+  if (parts.length !== 5) return 'Custom schedule';
+  const [min, hour, dom, mon, dow] = parts;
+  const dayNames: Record<string, string> = { '0': 'Sunday', '1': 'Monday', '2': 'Tuesday', '3': 'Wednesday', '4': 'Thursday', '5': 'Friday', '6': 'Saturday' };
+
+  if (cron === '* * * * *') return 'Runs every minute';
+  if (min.startsWith('*/')) return `Runs every ${min.replace('*/', '')} minutes`;
+  if (dow && !dow.includes('*') && !dow.includes('?')) {
+    const days = dow.split(',').map(d => dayNames[d] || d).join(', ');
+    return `Runs at ${hour.padStart(2,'0')}:${min.padStart(2,'0')} every ${days}`;
+  }
+  if (!dom.includes('*')) return `Runs on day ${dom} of every month at ${hour.padStart(2,'0')}:${min.padStart(2,'0')}`;
+  if (!hour.includes('*')) return `Runs daily at ${hour.padStart(2,'0')}:${min.padStart(2,'0')}`;
+  if (min === '0') return 'Runs every hour at :00';
+  return `Runs at minute ${min} of every hour`;
 }
 
 function HttpRequestConfig({ node }: { node: WorkflowNode }) {
