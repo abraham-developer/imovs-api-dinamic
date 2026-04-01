@@ -18,6 +18,7 @@ interface ImovsStore {
   // Workflows list
   workflows: WorkflowResponse[];
   selectedWorkflowId: string | null;
+  workflowActive: boolean;
 
   // Editor state
   editorNodes: WorkflowNode[];
@@ -27,6 +28,7 @@ interface ImovsStore {
   // Execution
   executions: WorkflowExecutionData[];
   executionLoading: boolean;
+  lastExecutionResult: any | null;
 
   // Node types
   nodeTypes: NodeTypeDefinition[];
@@ -56,6 +58,8 @@ interface ImovsStore {
   setWorkflowName: (name: string) => void;
   setIsSaving: (saving: boolean) => void;
   setIsExecuting: (executing: boolean) => void;
+  setWorkflowActive: (active: boolean) => void;
+  setLastExecutionResult: (result: any | null) => void;
   resetEditor: () => void;
 }
 
@@ -66,11 +70,13 @@ export const useImovsStore = create<ImovsStore>((set, get) => ({
   currentView: 'dashboard',
   workflows: [],
   selectedWorkflowId: null,
+  workflowActive: false,
   editorNodes: [],
   editorEdges: [],
   selectedNodeId: null,
   executions: [],
   executionLoading: false,
+  lastExecutionResult: null,
   nodeTypes: NODE_TYPE_DEFINITIONS,
   showCreateDialog: false,
   workflowName: '',
@@ -86,11 +92,13 @@ export const useImovsStore = create<ImovsStore>((set, get) => ({
     const workflow = get().workflows.find(w => w.id === id);
     set({
       selectedWorkflowId: id,
+      workflowActive: workflow?.active ?? false,
       editorNodes: workflow ? [...workflow.nodes] : [],
       editorEdges: workflow ? [...workflow.edges] : [],
       selectedNodeId: null,
       workflowName: workflow?.name || '',
       executions: [],
+      lastExecutionResult: null,
     });
   },
 
@@ -178,12 +186,16 @@ export const useImovsStore = create<ImovsStore>((set, get) => ({
   setWorkflowName: (name) => set({ workflowName: name }),
   setIsSaving: (saving) => set({ isSaving: saving }),
   setIsExecuting: (executing) => set({ isExecuting: executing }),
+  setWorkflowActive: (active) => set({ workflowActive: active }),
+  setLastExecutionResult: (result) => set({ lastExecutionResult: result }),
 
   resetEditor: () => set({
     editorNodes: [],
     editorEdges: [],
     selectedNodeId: null,
     workflowName: '',
+    workflowActive: false,
     executions: [],
+    lastExecutionResult: null,
   }),
 }));

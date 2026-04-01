@@ -4,9 +4,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useImovsStore } from '@/store/imovs-store';
 import { CreateWorkflowDialog } from './create-workflow-dialog';
-import { fetchWorkflows, deleteWorkflow, executeWorkflow } from '@/lib/api';
+import { fetchWorkflows, updateWorkflow, deleteWorkflow, executeWorkflow } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -33,6 +32,8 @@ import {
   ArrowRight,
   Loader2,
   RefreshCw,
+  Power,
+  PowerOff,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -47,6 +48,7 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 const nodeCountLabel = (count: number) => {
   if (count === 0) return 'No nodes';
@@ -68,6 +70,7 @@ export function WorkflowDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [executingId, setExecutingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const loadWorkflows = useCallback(async () => {
     setLoading(true);
@@ -107,11 +110,41 @@ export function WorkflowDashboard() {
   const handleExecute = async (id: string) => {
     setExecutingId(id);
     try {
-      await executeWorkflow(id);
+      const result = await executeWorkflow(id);
+      toast.success('Workflow executed', {
+        description: result?.executionId
+          ? `Execution ID: ${result.executionId}`
+          : 'Workflow executed successfully.',
+      });
     } catch (err) {
       console.error('Execution failed:', err);
+      toast.error('Execution failed', {
+        description: err instanceof Error ? err.message : 'An error occurred during execution.',
+      });
     } finally {
-      setExecutingId(false as any);
+      setExecutingId(null);
+    }
+  };
+
+  const handleToggleActive = async (id: string, currentActive: boolean, name: string) => {
+    setTogglingId(id);
+    const newActive = !currentActive;
+    // Optimistic update
+    setWorkflows(workflows.map((w) => (w.id === id ? { ...w, active: newActive } : w)));
+    try {
+      await updateWorkflow(id, { active: newActive });
+      toast.success(newActive ? 'Workflow activated' : 'Workflow deactivated', {
+        description: `"${name}" is now ${newActive ? 'active' : 'inactive'}.`,
+      });
+    } catch (err) {
+      console.error('Toggle active failed:', err);
+      // Revert on error
+      setWorkflows(workflows.map((w) => (w.id === id ? { ...w, active: currentActive } : w)));
+      toast.error('Failed to toggle', {
+        description: err instanceof Error ? err.message : 'An error occurred.',
+      });
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -239,8 +272,10 @@ export function WorkflowDashboard() {
                     onOpen={() => handleOpenWorkflow(workflow.id)}
                     onDelete={() => handleDelete(workflow.id)}
                     onExecute={() => handleExecute(workflow.id)}
+                    onToggleActive={() => handleToggleActive(workflow.id, workflow.active, workflow.name)}
                     isDeleting={deletingId === workflow.id}
                     isExecuting={executingId === workflow.id}
+                    isToggling={togglingId === workflow.id}
                   />
                 ))}
               </AnimatePresence>
@@ -279,15 +314,19 @@ function WorkflowCard({
   onOpen,
   onDelete,
   onExecute,
+  onToggleActive,
   isDeleting,
   isExecuting,
+  isToggling,
 }: {
   workflow: any;
   onOpen: () => void;
   onDelete: () => void;
   onExecute: () => void;
+  onToggleActive: () => void;
   isDeleting: boolean;
   isExecuting: boolean;
+  isToggling: boolean;
 }) {
   return (
     <motion.div
@@ -308,17 +347,37 @@ function WorkflowCard({
               {workflow.name}
             </h3>
             <div className="flex items-center gap-1.5">
-              <Badge
-                variant={workflow.active ? 'default' : 'secondary'}
-                className={cn(
-                  'text-[10px] font-semibold',
-                  workflow.active
-                    ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                    : 'bg-zinc-100 text-zinc-500 border-zinc-200'
-                )}
-              >
-                {workflow.active ? 'Active' : 'Inactive'}
-              </Badge>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className={cn(
+                      'flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors border',
+                      'focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400',
+                      isToggling && 'opacity-50 pointer-events-none',
+                      workflow.active
+                        ? 'bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-200 cursor-pointer'
+                        : 'bg-zinc-100 text-zinc-500 border-zinc-200 hover:bg-zinc-200 cursor-pointer'
+                    )}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleActive();
+                    }}
+                    disabled={isToggling}
+                  >
+                    {isToggling ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : workflow.active ? (
+                      <Power className="w-3 h-3" />
+                    ) : (
+                      <PowerOff className="w-3 h-3" />
+                    )}
+                    {workflow.active ? 'Active' : 'Inactive'}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {workflow.active ? 'Click to deactivate' : 'Click to activate'}
+                </TooltipContent>
+              </Tooltip>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

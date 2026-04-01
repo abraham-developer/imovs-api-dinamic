@@ -57,6 +57,8 @@ import {
   Loader2,
   Settings2,
   Layers,
+  Power,
+  PowerOff,
 } from 'lucide-react';
 import {
   NODE_TYPE_DEFINITIONS,
@@ -67,6 +69,7 @@ import {
 import { updateWorkflow, executeWorkflow } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { UserMenu } from './user-menu';
+import { toast } from 'sonner';
 
 const iconMap: Record<string, any> = {
   Play: Zap,
@@ -246,6 +249,9 @@ function FlowCanvas() {
     setIsExecuting,
     setEditorNodes,
     setEditorEdges,
+    workflowActive,
+    setWorkflowActive,
+    setLastExecutionResult,
   } = useImovsStore();
 
   // Open config panel when a node is selected
@@ -316,8 +322,14 @@ function FlowCanvas() {
         nodes: editorNodes,
         edges: editorEdges,
       });
+      toast.success('Workflow saved', {
+        description: `"${workflowName}" has been saved successfully.`,
+      });
     } catch (err) {
       console.error('Save failed:', err);
+      toast.error('Save failed', {
+        description: err instanceof Error ? err.message : 'An error occurred while saving.',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -327,13 +339,65 @@ function FlowCanvas() {
     if (!selectedWorkflowId) return;
     setIsExecuting(true);
     try {
-      await executeWorkflow(selectedWorkflowId);
+      // Auto-save before executing
+      let saveError = false;
+      try {
+        await updateWorkflow(selectedWorkflowId, {
+          name: workflowName,
+          nodes: editorNodes,
+          edges: editorEdges,
+        });
+      } catch (err) {
+        console.error('Auto-save before execute failed:', err);
+        saveError = true;
+        toast.warning('Auto-save failed', {
+          description: 'Attempting to execute with last saved version...',
+        });
+      }
+
+      // Execute the workflow
+      const result = await executeWorkflow(selectedWorkflowId);
+      setLastExecutionResult(result);
+
+      toast.success('Workflow executed', {
+        description: result?.executionId
+          ? `Execution ID: ${result.executionId} — Duration: ${result.duration ?? 'N/A'}ms`
+          : 'Workflow executed successfully.',
+      });
     } catch (err) {
       console.error('Execution failed:', err);
+      toast.error('Execution failed', {
+        description: err instanceof Error ? err.message : 'An error occurred during execution.',
+      });
     } finally {
       setIsExecuting(false);
     }
-  }, [selectedWorkflowId, setIsExecuting]);
+  }, [selectedWorkflowId, workflowName, editorNodes, editorEdges, setIsExecuting, setLastExecutionResult]);
+
+  const handleToggleActive = useCallback(async () => {
+    if (!selectedWorkflowId) return;
+    const newActive = !workflowActive;
+    setWorkflowActive(newActive);
+    try {
+      await updateWorkflow(selectedWorkflowId, { active: newActive });
+      toast.success(newActive ? 'Workflow activated' : 'Workflow deactivated', {
+        description: newActive
+          ? `"${workflowName}" is now active and will respond to triggers.`
+          : `"${workflowName}" is now inactive.`,
+      });
+      // Also update the workflows list
+      const { workflows, setWorkflows } = useImovsStore.getState();
+      setWorkflows(
+        workflows.map((w) => (w.id === selectedWorkflowId ? { ...w, active: newActive } : w))
+      );
+    } catch (err) {
+      console.error('Toggle active failed:', err);
+      setWorkflowActive(!newActive); // Revert
+      toast.error('Failed to toggle', {
+        description: err instanceof Error ? err.message : 'An error occurred.',
+      });
+    }
+  }, [selectedWorkflowId, workflowActive, workflowName, setWorkflowActive]);
 
   const defaultEdgeOptions = useMemo(() => ({
     type: 'smoothstep' as const,
@@ -361,19 +425,19 @@ function FlowCanvas() {
 
   return (
     <div className="flex-1 flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b bg-white">
+      {/* Toolbar - responsive with flex-wrap */}
+      <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 border-b bg-white flex-wrap min-h-[44px]">
         <Button
           variant="ghost"
           size="sm"
           className="h-8 text-xs"
           onClick={() => setView('dashboard')}
         >
-          <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
-          Back
+          <ArrowLeft className="w-3.5 h-3.5 sm:mr-1.5" />
+          <span className="hidden sm:inline">Back</span>
         </Button>
 
-        <Separator orientation="vertical" className="h-5 mx-1" />
+        <Separator orientation="vertical" className="h-5 mx-0.5 sm:mx-1 hidden sm:block" />
 
         {/* Palette toggle - desktop */}
         <div className="hidden lg:block">
@@ -423,7 +487,42 @@ function FlowCanvas() {
           />
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+          {/* Active/Inactive toggle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  'h-8 text-xs gap-1.5',
+                  workflowActive && 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-700'
+                )}
+                onClick={handleToggleActive}
+              >
+                {workflowActive ? (
+                  <Power className="w-3.5 h-3.5" />
+                ) : (
+                  <PowerOff className="w-3.5 h-3.5" />
+                )}
+                <Badge
+                  variant={workflowActive ? 'default' : 'secondary'}
+                  className={cn(
+                    'text-[10px] font-semibold px-1.5 py-0',
+                    workflowActive
+                      ? 'bg-emerald-500 text-white hover:bg-emerald-500'
+                      : 'bg-zinc-100 text-zinc-500'
+                  )}
+                >
+                  {workflowActive ? 'Active' : 'Inactive'}
+                </Badge>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {workflowActive ? 'Deactivate workflow' : 'Activate workflow'}
+            </TooltipContent>
+          </Tooltip>
+
           {/* Toggle config button */}
           <Tooltip>
             <TooltipTrigger asChild>
@@ -474,7 +573,7 @@ function FlowCanvas() {
             <span className="hidden sm:inline">Execute</span>
           </Button>
 
-          <Separator orientation="vertical" className="h-5 mx-1" />
+          <Separator orientation="vertical" className="h-5 mx-0.5 sm:mx-1 hidden sm:block" />
 
           <UserMenu />
         </div>
@@ -538,7 +637,7 @@ function FlowCanvas() {
 
         {/* Right Panel - Config Panel (desktop) */}
         <div className={cn(
-          'w-80 flex-shrink-0 border-l bg-white transition-all duration-200',
+          'w-80 flex-shrink-0 border-l bg-white transition-all duration-200 overflow-hidden',
           'hidden lg:flex flex-col',
           !configOpen && 'lg:hidden'
         )}>
