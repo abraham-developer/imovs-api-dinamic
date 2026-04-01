@@ -100,6 +100,14 @@ export const useImovsStore = create<ImovsStore>((set, get) => ({
       executions: [],
       lastExecutionResult: null,
     });
+    // Reset counter to avoid ID collisions with existing nodes
+    if (workflow?.nodes?.length) {
+      const maxNum = workflow.nodes.reduce((max, n) => {
+        const m = n.id.match(/node-(\d+)/);
+        return m ? Math.max(max, parseInt(m[1], 10)) : max;
+      }, 0);
+      nodeIdCounter = maxNum + 1;
+    }
   },
 
   // Editor actions
@@ -136,7 +144,7 @@ export const useImovsStore = create<ImovsStore>((set, get) => ({
     const def = NODE_TYPE_DEFINITIONS.find(d => d.type === type);
     if (!def) return;
 
-    const id = `node-${nodeIdCounter++}`;
+    const id = `node-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const newNode: WorkflowNode = {
       id,
       type,
