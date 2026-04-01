@@ -217,19 +217,22 @@ function FlowCanvas() {
   const [configOpen, setConfigOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(true);
   const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Detect desktop on mount
+  // Detect screen size
   useEffect(() => {
-    const checkDesktop = () => {
-      if (window.innerWidth < 1024) {
-        setPaletteOpen(false);
-      } else {
+    const checkScreen = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (!mobile) {
         setPaletteOpen(true);
+      } else {
+        setPaletteOpen(false);
       }
     };
-    checkDesktop();
-    window.addEventListener('resize', checkDesktop);
-    return () => window.removeEventListener('resize', checkDesktop);
+    checkScreen();
+    window.addEventListener('resize', checkScreen);
+    return () => window.removeEventListener('resize', checkScreen);
   }, []);
 
   const {
@@ -654,13 +657,15 @@ function FlowCanvas() {
           <NodeConfigPanel onClose={() => setConfigOpen(false)} />
         </div>
 
-        {/* Config Panel - Mobile/Tablet: Sheet overlay */}
-        <Sheet open={configOpen} onOpenChange={setConfigOpen}>
-          <SheetContent side="right" className="w-80 sm:w-96 p-0 lg:hidden">
-            <SheetTitle className="sr-only">Node Configuration</SheetTitle>
-            <NodeConfigPanel onClose={() => setConfigOpen(false)} />
-          </SheetContent>
-        </Sheet>
+        {/* Config Panel - Mobile/Tablet: Sheet overlay (only renders on mobile) */}
+        {isMobile && (
+          <Sheet open={configOpen} onOpenChange={setConfigOpen}>
+            <SheetContent side="right" className="w-80 sm:w-96 p-0">
+              <SheetTitle className="sr-only">Node Configuration</SheetTitle>
+              <NodeConfigPanel onClose={() => setConfigOpen(false)} />
+            </SheetContent>
+          </Sheet>
+        )}
       </div>
     </div>
   );

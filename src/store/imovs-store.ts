@@ -144,7 +144,13 @@ export const useImovsStore = create<ImovsStore>((set, get) => ({
     const def = NODE_TYPE_DEFINITIONS.find(d => d.type === type);
     if (!def) return;
 
-    const id = `node-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    // Generate a truly unique ID
+    let id: string;
+    const existingIds = new Set(get().editorNodes.map(n => n.id));
+    do {
+      id = `node-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    } while (existingIds.has(id));
+
     const newNode: WorkflowNode = {
       id,
       type,
