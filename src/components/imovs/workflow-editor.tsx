@@ -641,7 +641,7 @@ function FlowCanvas() {
           'hidden lg:flex flex-col',
           !configOpen && 'lg:hidden'
         )}>
-          <NodeConfigPanel />
+          <NodeConfigPanel onClose={() => setConfigOpen(false)} />
         </div>
 
         {/* Config Panel - Mobile/Tablet: Sheet overlay */}
@@ -649,7 +649,7 @@ function FlowCanvas() {
           <Sheet open={configOpen} onOpenChange={setConfigOpen}>
             <SheetContent side="right" className="w-80 sm:w-96 p-0">
               <SheetTitle className="sr-only">Node Configuration</SheetTitle>
-              <NodeConfigPanel />
+              <NodeConfigPanel onClose={() => setConfigOpen(false)} />
             </SheetContent>
           </Sheet>
         )}

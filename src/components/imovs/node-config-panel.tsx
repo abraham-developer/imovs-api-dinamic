@@ -30,7 +30,7 @@ import type { NodeType, NodeData, WorkflowNode } from '@/lib/engine/types';
 import { getNodeTypeDefinition } from '@/lib/engine/types';
 import { cn } from '@/lib/utils';
 
-export function NodeConfigPanel() {
+export function NodeConfigPanel({ onClose }: { onClose?: () => void }) {
   const {
     editorNodes,
     selectedNodeId,
@@ -39,6 +39,11 @@ export function NodeConfigPanel() {
   } = useImovsStore();
 
   const selectedNode = editorNodes.find((n) => n.id === selectedNodeId);
+
+  const handleClose = useCallback(() => {
+    setSelectedNodeId(null);
+    onClose?.();
+  }, [setSelectedNodeId, onClose]);
 
   if (!selectedNode || !selectedNodeId) {
     return (
@@ -65,7 +70,7 @@ export function NodeConfigPanel() {
           variant="ghost"
           size="sm"
           className="h-6 w-6 p-0"
-          onClick={() => setSelectedNodeId(null)}
+          onClick={handleClose}
         >
           <X className="w-3.5 h-3.5" />
         </Button>
